@@ -1,14 +1,17 @@
 /**
  * LinkedIn AI Commenter - Background Script
- * Handles requests from content.js and calls Gemini via a Cloudflare Worker.
+ * Calls Gemini directly with the Google AI API key saved in Chrome local storage.
  */
 
+const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
 const DEFAULT_SETTINGS = {
-  workerUrl: "",
-  extensionSecret: "",
+  googleApiKey: "",
   profileName: "",
   profileRole: "",
   profileCompany: "",
+  profileBackground: "",
   profileExpertise: "",
   profileTone: "Warm, specific, concise, practical, and human.",
   profileVoice: "Write like a thoughtful LinkedIn professional. Avoid hype, clichés, and generic AI phrasing.",
@@ -38,40 +41,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function generateContent(action, context) {
   const settings = await chrome.storage.local.get(DEFAULT_SETTINGS);
-  const workerUrl = normalizeWorkerUrl(settings.workerUrl);
+  const apiKey = (settings.googleApiKey || "").trim();
 
-  if (!workerUrl) {
-    throw new Error("Worker URL is not configured. Open the extension settings and paste your Cloudflare Worker URL.");
+  if (!apiKey) {
+    throw new Error("Google AI API key is not configured. Open the extension settings and paste your API key.");
   }
 
   const prompt = getPromptInput(action, context);
+  if (!prompt.trim()) {
+    throw new Error("No content was found to send to Gemini.");
+  }
 
-  const response = await fetch(workerUrl, {
+  const instruction = buildInstruction(action, prompt, buildProfile(settings));
+  const response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(settings.extensionSecret ? { "X-Extension-Token": settings.extensionSecret } : {})
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action,
-      prompt,
-      profile: buildProfile(settings)
+      contents: [{ role: "user", parts: [{ text: instruction }] }],
+      generationConfig: {
+        temperature: action === "summarize" ? 0.35 : 0.8,
+        topP: 0.9,
+        maxOutputTokens: action === "rewrite" ? 900 : 350
+      }
     })
   });
 
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error("Authentication failed. Check the extension secret in both Chrome settings and Cloudflare.");
-    }
-    throw new Error(result.error || `Worker request failed with HTTP ${response.status}`);
+    throw new Error(formatGeminiError(response.status, result));
   }
 
-  if (result.error) throw new Error(result.error);
-  if (!result.result) throw new Error("Unexpected response format from worker.");
+  const text = result.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim();
+  if (!text) {
+    throw new Error("Gemini returned an empty response. Try again with a longer post or message context.");
+  }
 
-  return result.result.trim();
+  return text;
 }
 
 function getPromptInput(action, context) {
@@ -95,6 +101,7 @@ function buildProfile(settings) {
     name: settings.profileName,
     role: settings.profileRole,
     company: settings.profileCompany,
+    background: settings.profileBackground,
     expertise: settings.profileExpertise,
     tone: settings.profileTone,
     voice: settings.profileVoice,
@@ -103,9 +110,38 @@ function buildProfile(settings) {
   };
 }
 
-function normalizeWorkerUrl(url) {
-  const trimmed = (url || "").trim();
-  if (!trimmed) return "";
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  return withScheme.endsWith("/") ? withScheme : `${withScheme}/`;
+function buildInstruction(action, prompt, profile) {
+  const profileBlock = [
+    `Name: ${profile.name || "Not provided"}`,
+    `Role: ${profile.role || "Not provided"}`,
+    `Company/Business: ${profile.company || "Not provided"}`,
+    `Background: ${profile.background || "Not provided"}`,
+    `What I do / expertise: ${profile.expertise || "Not provided"}`,
+    `Tone: ${profile.tone || "Warm, specific, concise, practical, and human."}`,
+    `Voice: ${profile.voice || "Thoughtful, clear, non-salesy, and not generic."}`,
+    `Audience: ${profile.audience || "Professional LinkedIn audience"}`,
+    `Goals: ${profile.goals || "Add value and start genuine conversations."}`
+  ].join("\n");
+
+  const sharedRules = `Use the profile below so the answer sounds like the user, not like a generic AI assistant.\n\n${profileBlock}\n\nRules:\n- Be specific to the provided LinkedIn context.\n- Do not invent personal achievements, client names, numbers, or credentials.\n- Avoid clichés like \"Great post\", \"Thanks for sharing\", \"game-changer\", and \"valuable insights\" unless truly necessary.\n- Keep it natural for LinkedIn and easy to paste.\n- Return only the final text.\n- No markdown unless the requested output benefits from bullets.`;
+
+  const prompts = {
+    comment: `${sharedRules}\n\nWrite one LinkedIn comment, 1-3 sentences, that adds a useful perspective and optionally ends with a natural question.\n\nPost:\n${prompt}`,
+    reply: `${sharedRules}\n\nWrite one friendly LinkedIn reply, 1-3 sentences, that acknowledges the other person and adds value.\n\nContext:\n${prompt}`,
+    summarize: `Summarize this LinkedIn post in 3-5 concise bullets. Keep it neutral and accurate.\n\nPost:\n${prompt}`,
+    rewrite: `${sharedRules}\n\nRewrite this LinkedIn draft in the user's voice. Improve the hook, clarity, formatting, and flow while preserving the original meaning. Add 2-4 relevant hashtags only if they fit.\n\nDraft:\n${prompt}`,
+    message: `${sharedRules}\n\nWrite a concise, professional LinkedIn message reply based on this conversation. Keep it natural and easy to send.\n\nConversation:\n${prompt}`
+  };
+
+  return prompts[action] || prompts.comment;
+}
+
+function formatGeminiError(status, result) {
+  const message = result.error?.message || `Gemini API request failed with HTTP ${status}`;
+
+  if (status === 400) return `Gemini rejected the request: ${message}`;
+  if (status === 401 || status === 403) return "Google AI API authentication failed. Check that your API key is correct and the Gemini API is enabled.";
+  if (status === 429) return "Gemini quota limit reached. Wait a few minutes or check your Google AI Studio quota.";
+
+  return message;
 }

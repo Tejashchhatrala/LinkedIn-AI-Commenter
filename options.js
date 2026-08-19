@@ -4,11 +4,11 @@ const defaults = {
   enableReply: true,
   enableSummarizer: true,
   enableRewrite: true,
-  workerUrl: "",
-  extensionSecret: "",
+  googleApiKey: "",
   profileName: "",
   profileRole: "",
   profileCompany: "",
+  profileBackground: "",
   profileExpertise: "",
   profileTone: "Warm, specific, concise, practical, and human.",
   profileVoice: "Write like a thoughtful LinkedIn professional. Avoid hype, clichés, and generic AI phrasing.",
@@ -18,7 +18,9 @@ const defaults = {
 
 const toggleIds = ['toggleComment', 'toggleReply', 'toggleSummarizer', 'toggleRewrite'];
 const toggleKeys = ['enableComment', 'enableReply', 'enableSummarizer', 'enableRewrite'];
-const fieldIds = ['workerUrl', 'extensionSecret', 'profileName', 'profileRole', 'profileCompany', 'profileExpertise', 'profileTone', 'profileVoice', 'profileAudience', 'profileGoals'];
+const fieldIds = ['googleApiKey', 'profileName', 'profileRole', 'profileCompany', 'profileBackground', 'profileExpertise', 'profileTone', 'profileVoice', 'profileAudience', 'profileGoals'];
+const statusEl = document.getElementById('saveStatus');
+let statusTimer;
 
 // Load settings on startup
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,13 +38,22 @@ document.addEventListener('DOMContentLoaded', () => {
 // Save feature toggles
 toggleIds.forEach((id, index) => {
   document.getElementById(id).addEventListener('change', (event) => {
-    chrome.storage.local.set({ [toggleKeys[index]]: event.target.checked });
+    chrome.storage.local.set({ [toggleKeys[index]]: event.target.checked }, showSaved);
   });
 });
 
-// Save profile and worker settings as the user types
+// Save API key and profile settings as the user types
 fieldIds.forEach((id) => {
   document.getElementById(id).addEventListener('input', (event) => {
-    chrome.storage.local.set({ [id]: event.target.value.trim() });
+    chrome.storage.local.set({ [id]: event.target.value.trim() }, showSaved);
   });
 });
+
+function showSaved() {
+  if (!statusEl) return;
+  statusEl.textContent = 'Saved';
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => {
+    statusEl.textContent = '';
+  }, 1200);
+}

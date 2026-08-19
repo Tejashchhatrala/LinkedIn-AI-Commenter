@@ -195,6 +195,14 @@
       margin-top: 4px;
     }
 
+    .save-status {
+      min-height: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #057642;
+      text-align: right;
+    }
+
     .badge {
       display: inline-block;
       margin-top: 5px;
@@ -220,17 +228,13 @@
 
 
     <div class="settings-card">
-      <h2>Cloudflare Worker</h2>
+      <h2>Google AI Setup</h2>
       <div class="field-group">
-        <label for="workerUrl">Worker URL</label>
-        <input id="workerUrl" type="url" placeholder="https://your-worker.your-subdomain.workers.dev/">
-        <div class="help-text">Paste the deployed Worker URL here. The extension will add https:// if you omit it.</div>
+        <label for="googleApiKey">Google AI API Key</label>
+        <input id="googleApiKey" type="password" placeholder="Paste your AIza... API key">
+        <div class="help-text">Stored only in this browser with Chrome extension storage. Get a key from Google AI Studio.</div>
       </div>
-      <div class="field-group">
-        <label for="extensionSecret">Extension Secret (optional)</label>
-        <input id="extensionSecret" type="password" placeholder="Must match EXTENSION_SECRET in Cloudflare">
-        <div class="help-text">Use this if you set EXTENSION_SECRET as a Worker secret.</div>
-      </div>
+      <div id="saveStatus" class="save-status" aria-live="polite"></div>
     </div>
 
     <div class="settings-card">
@@ -246,6 +250,10 @@
       <div class="field-group">
         <label for="profileCompany">Company / Business</label>
         <input id="profileCompany" type="text" placeholder="What company or brand should it reference?">
+      </div>
+      <div class="field-group">
+        <label for="profileBackground">Your Background</label>
+        <textarea id="profileBackground" placeholder="Your experience, story, industries, values, and point of view."></textarea>
       </div>
       <div class="field-group">
         <label for="profileExpertise">What You Do</label>
@@ -328,7 +336,7 @@
     </div>
 
     <div class="footer">
-      Secure & Free • Version 1.1<br>
+      Local API Key • Version 1.2<br>
       <a href="https://webloop.space" target="_blank"
         style="color: #0a66c2; text-decoration: none; font-weight: 600; margin-top: 5px; display: inline-block;">Use
         our free super tools: webloop.space</a>
