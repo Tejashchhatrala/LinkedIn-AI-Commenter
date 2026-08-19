@@ -1,125 +1,111 @@
 /**
  * LinkedIn AI Commenter - Background Script
- * Handles requests from content.js and calls Groq API via Cloudflare Worker
+ * Handles requests from content.js and calls Gemini via a Cloudflare Worker.
  */
 
-// ===== CONFIGURATION =====
-// Update these with your actual values from Cloudflare Worker
-const WORKER_URL = "linkedin-ai-proxy.info-rana012.workers.dev";  // e.g., "linkedin-ai-proxy.info-rana012.workers.dev"
-const EXTENSION_SECRET = "myapp-xK9q2-linkedin-2024";  // Must match EXTENSION_SECRET in Cloudflare worker
+const DEFAULT_SETTINGS = {
+  workerUrl: "",
+  extensionSecret: "",
+  profileName: "",
+  profileRole: "",
+  profileCompany: "",
+  profileExpertise: "",
+  profileTone: "Warm, specific, concise, practical, and human.",
+  profileVoice: "Write like a thoughtful LinkedIn professional. Avoid hype, clichés, and generic AI phrasing.",
+  profileAudience: "Founders, operators, marketers, product teams, and professional peers.",
+  profileGoals: "Build relationships, add useful perspective, and invite genuine conversation."
+};
 
-// ===== MESSAGE LISTENER =====
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "generateComment") {
-    generateContent(
-      request.parentComment ? "reply" : "comment",
-      {
-        postContent: request.postContent,
-        parentComment: request.parentComment
-      }
-    )
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  const handlers = {
+    generateComment: () => generateContent(request.parentComment ? "reply" : "comment", {
+      postContent: request.postContent,
+      parentComment: request.parentComment
+    }),
+    summarizePost: () => generateContent("summarize", { postContent: request.postContent }),
+    rewritePost: () => generateContent("rewrite", { postContent: request.postContent }),
+    generateMessageReply: () => generateContent("message", { history: request.history })
+  };
 
-  if (request.action === "summarizePost") {
-    generateContent("summarize", { postContent: request.postContent })
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  if (!handlers[request.action]) return false;
 
-  if (request.action === "rewritePost") {
-    generateContent("rewrite", { postContent: request.postContent })
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  handlers[request.action]()
+    .then(data => sendResponse({ success: true, data }))
+    .catch(error => sendResponse({ success: false, error: error.message }));
 
-  if (request.action === "generateMessageReply") {
-    generateContent("message", { history: request.history })
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  return true;
 });
 
-/**
- * Generate content by calling Groq API via Cloudflare Worker
- * @param {string} action - The action type: "comment", "reply", "summarize", "rewrite", or "message"
- * @param {object} context - Context data for the action
- */
 async function generateContent(action, context) {
-  // Validate configuration
-  if (WORKER_URL === "YOUR_WORKER_URL_HERE" || EXTENSION_SECRET === "YOUR_EXTENSION_SECRET_HERE") {
-    throw new Error("Worker URL or EXTENSION_SECRET not configured. Please update background.js with your Cloudflare Worker details.");
+  const settings = await chrome.storage.local.get(DEFAULT_SETTINGS);
+  const workerUrl = normalizeWorkerUrl(settings.workerUrl);
+
+  if (!workerUrl) {
+    throw new Error("Worker URL is not configured. Open the extension settings and paste your Cloudflare Worker URL.");
   }
 
-  let prompt;
+  const prompt = getPromptInput(action, context);
 
-  // Build prompt based on action
-  if (action === "comment") {
-    prompt = context.postContent;
-  } else if (action === "reply") {
-    prompt = `Post: "${context.postContent}"\n\nComment to reply to: "${context.parentComment}"`;
-  } else if (action === "summarize") {
-    prompt = context.postContent;
-  } else if (action === "rewrite") {
-    prompt = context.postContent;
-  } else if (action === "message") {
-    prompt = context.history;
-  } else {
-    throw new Error(`Invalid action: ${action}`);
+  const response = await fetch(workerUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(settings.extensionSecret ? { "X-Extension-Token": settings.extensionSecret } : {})
+    },
+    body: JSON.stringify({
+      action,
+      prompt,
+      profile: buildProfile(settings)
+    })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("Authentication failed. Check the extension secret in both Chrome settings and Cloudflare.");
+    }
+    throw new Error(result.error || `Worker request failed with HTTP ${response.status}`);
   }
 
-  // Call Cloudflare Worker (Groq proxy)
-  try {
-    console.log(`Sending ${action} request to worker:`, WORKER_URL);
+  if (result.error) throw new Error(result.error);
+  if (!result.result) throw new Error("Unexpected response format from worker.");
 
-    const response = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Extension-Token": EXTENSION_SECRET
-      },
-      body: JSON.stringify({
-        action: action,
-        prompt: prompt
-      })
-    });
+  return result.result.trim();
+}
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Worker Error:", response.status, errorData);
-
-      if (response.status === 401) {
-        throw new Error("Authentication failed. Check your EXTENSION_SECRET in background.js.");
-      } else if (response.status === 400) {
-        throw new Error(`Bad request: ${errorData.error || "Invalid parameters"}`);
-      } else if (response.status === 500) {
-        throw new Error(`Server error: ${errorData.error || "Worker configuration issue"}`);
-      } else {
-        throw new Error(`HTTP ${response.status}: ${errorData.error || "Unknown error"}`);
-      }
-    }
-
-    const result = await response.json();
-    console.log("Worker Response:", result);
-
-    // Extract the result from the response
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    if (result.result) {
-      return result.result.trim();
-    }
-
-    throw new Error("Unexpected response format from worker");
-
-  } catch (error) {
-    console.error("Generation failed:", error);
-    throw new Error("Failed to generate content: " + error.message);
+function getPromptInput(action, context) {
+  if (action === "comment" || action === "summarize" || action === "rewrite") {
+    return context.postContent || "";
   }
+
+  if (action === "reply") {
+    return `Post: "${context.postContent || ""}"\n\nComment to reply to: "${context.parentComment || ""}"`;
+  }
+
+  if (action === "message") {
+    return context.history || "";
+  }
+
+  throw new Error(`Invalid action: ${action}`);
+}
+
+function buildProfile(settings) {
+  return {
+    name: settings.profileName,
+    role: settings.profileRole,
+    company: settings.profileCompany,
+    expertise: settings.profileExpertise,
+    tone: settings.profileTone,
+    voice: settings.profileVoice,
+    audience: settings.profileAudience,
+    goals: settings.profileGoals
+  };
+}
+
+function normalizeWorkerUrl(url) {
+  const trimmed = (url || "").trim();
+  if (!trimmed) return "";
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return withScheme.endsWith("/") ? withScheme : `${withScheme}/`;
 }

@@ -11,7 +11,7 @@ This guide will walk you through setting up a Cloudflare Worker to securely prox
 5. [Step 3: Create Your Worker](#step-3-create-your-worker)
 6. [Step 4: Add Your API Key](#step-4-add-your-api-key)
 7. [Step 5: Deploy Your Worker](#step-5-deploy-your-worker)
-8. [Step 6: Update Your Chrome Extension](#step-6-update-your-chrome-extension)
+8. [Step 6: Configure Your Chrome Extension](#step-6-configure-your-chrome-extension)
 9. [Testing Your Setup](#testing-your-setup)
 10. [Troubleshooting](#troubleshooting)
 
@@ -172,43 +172,28 @@ https://linkedin-ai-proxy.info-rana012.workers.dev
 
 ---
 
-## 🔧 Step 6: Update Your Chrome Extension
+## 🔧 Step 6: Configure Your Chrome Extension
 
-### 6.1 Update manifest.json
+### 6.1 Open Extension Settings
 
-1. Open `manifest.json` in your extension folder
-2. Find the `host_permissions` section (around line 16-18)
-3. Replace the worker URL with YOUR worker URL:
+1. Click the **LinkedIn AI Commenter** extension icon in Chrome
+2. Paste your Worker URL into **Worker URL**
+3. If you created an `EXTENSION_SECRET` Worker secret, paste the same value into **Extension Secret**
 
-```json
-"host_permissions": [
-  "https://generativelanguage.googleapis.com/*",
-  "https://YOUR-WORKER-NAME.YOUR-SUBDOMAIN.workers.dev/*"
-],
-```
+### 6.2 Add Your Personal Profile
 
-**Example**:
-```json
-"host_permissions": [
-  "https://generativelanguage.googleapis.com/*",
-  "https://linkedin-ai-proxy.info-rana012.workers.dev/*"
-],
-```
+Fill in the **Your Tone, Voice & Work** section:
 
-### 6.2 Update background.js
+- Name
+- Role / title
+- Company or business
+- What you do / expertise
+- Tone
+- Voice rules
+- Audience
+- LinkedIn goals
 
-1. Open `background.js` in your extension folder
-2. Find line 123 (the `workerUrl` variable)
-3. Replace it with YOUR worker URL:
-
-```javascript
-const workerUrl = "https://YOUR-WORKER-NAME.YOUR-SUBDOMAIN.workers.dev/";
-```
-
-**Example**:
-```javascript
-const workerUrl = "https://linkedin-ai-proxy.info-rana012.workers.dev/";
-```
+This profile is sent with each generation request so comments, replies, messages, and rewrites sound more like you.
 
 ### 6.3 Reload the Extension
 
@@ -265,8 +250,8 @@ const workerUrl = "https://linkedin-ai-proxy.info-rana012.workers.dev/";
 **Problem**: The extension can't reach your worker.
 
 **Solution**:
-1. Check that you updated `background.js` with the correct worker URL
-2. Make sure the URL ends with a `/`
+1. Check that you pasted the correct Worker URL in the extension settings
+2. The extension automatically adds a trailing `/` if needed
 3. Reload the extension in `chrome://extensions/`
 4. Check that your worker is deployed (green status in Cloudflare dashboard)
 
@@ -422,8 +407,8 @@ Before considering your setup complete, verify:
 - [ ] Worker created and deployed
 - [ ] Environment variable `GEMINI_API_KEY` added
 - [ ] Worker URL copied
-- [ ] `manifest.json` updated with worker URL
-- [ ] `background.js` updated with worker URL
+- [ ] Worker URL saved in extension settings
+- [ ] Personal profile saved in extension settings
 - [ ] Extension reloaded in Chrome
 - [ ] Tested on LinkedIn and comments generate successfully
 

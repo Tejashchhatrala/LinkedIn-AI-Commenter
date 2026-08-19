@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn AI Commenter",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Auto-generate LinkedIn comments using Gemini AI.",
   "icons": {
     "16": "app_icon.png",
@@ -15,7 +15,8 @@
   ],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
-    "https://linkedin-ai-proxy.info-rana012.workers.dev/*"
+    "https://*.workers.dev/*",
+    "https://*/*"
   ],
   "options_page": "options.html",
   "background": {

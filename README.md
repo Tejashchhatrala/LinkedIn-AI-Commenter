@@ -15,6 +15,7 @@
 - 💡 **Sound Smart**: Get unique perspectives and insights
 - 🚀 **Boost Engagement**: Increase your LinkedIn presence effortlessly
 - 🔒 **Secure**: Your API key stays safe on Cloudflare's servers
+- 🗣️ **Personalized**: Add your role, expertise, tone, voice, audience, and LinkedIn goals
 
 ---
 
@@ -101,10 +102,11 @@ The extension uses a **Cloudflare Worker** as a secure proxy to keep your Google
 
 #### Step 4: Update Extension
 
-1. Open `manifest.json`, update line 18 with your worker URL
-2. Open `background.js`, update line 123 with your worker URL
-3. Go to `chrome://extensions/` and reload the extension
-4. Test on LinkedIn!
+1. Click the extension icon to open settings
+2. Paste your Cloudflare Worker URL
+3. Fill in your name, role, what you do, tone, voice, audience, and LinkedIn goals
+4. Go to `chrome://extensions/` and reload the extension
+5. Test on LinkedIn!
 
 **📖 Detailed Setup Instructions**: See [README-CLOUDFLARE-SETUP.md](README-CLOUDFLARE-SETUP.md)
 
@@ -133,7 +135,7 @@ The extension uses a **Cloudflare Worker** as a secure proxy to keep your Google
 
 ### Settings
 
-Click the extension icon to toggle features on/off.
+Click the extension icon to paste your Worker URL, enroll your personal tone/voice/profile, and toggle features on/off.
 
 ---
 
@@ -166,7 +168,7 @@ linkedin-ai-commenter/
 
 ### Extension Settings
 
-Access via extension icon. Toggle features:
+Access via the extension icon. Configure your Worker URL and personal writing profile, then toggle features:
 - AI Comment ✅
 - Smart Reply ✅
 - Post Summarizer ✅
@@ -174,12 +176,11 @@ Access via extension icon. Toggle features:
 
 ### Worker Configuration
 
-Edit `worker.js` to customize:
+Copy `worker.js` into Cloudflare. You can edit it to customize:
 
 **AI Model:**
 ```javascript
-const GEMINI_MODEL = 'gemini-1.5-flash'; // Fast (default)
-// or 'gemini-1.5-pro' for better quality
+const GEMINI_MODEL = 'gemini-2.0-flash'; // Fast (default)
 ```
 
 **Creativity:**
@@ -221,7 +222,7 @@ Your API key is:
 - Check extension settings
 
 ### "Failed to connect to AI"
-- Verify worker URL in `background.js` line 123
+- Verify the Worker URL in the extension settings
 - Check worker is deployed in Cloudflare dashboard
 - Test worker URL in browser
 
