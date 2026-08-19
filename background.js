@@ -1,125 +1,147 @@
 /**
  * LinkedIn AI Commenter - Background Script
- * Handles requests from content.js and calls Groq API via Cloudflare Worker
+ * Calls Gemini directly with the Google AI API key saved in Chrome local storage.
  */
 
-// ===== CONFIGURATION =====
-// Update these with your actual values from Cloudflare Worker
-const WORKER_URL = "linkedin-ai-proxy.info-rana012.workers.dev";  // e.g., "linkedin-ai-proxy.info-rana012.workers.dev"
-const EXTENSION_SECRET = "myapp-xK9q2-linkedin-2024";  // Must match EXTENSION_SECRET in Cloudflare worker
+const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-// ===== MESSAGE LISTENER =====
+const DEFAULT_SETTINGS = {
+  googleApiKey: "",
+  profileName: "",
+  profileRole: "",
+  profileCompany: "",
+  profileBackground: "",
+  profileExpertise: "",
+  profileTone: "Warm, specific, concise, practical, and human.",
+  profileVoice: "Write like a thoughtful LinkedIn professional. Avoid hype, clichés, and generic AI phrasing.",
+  profileAudience: "Founders, operators, marketers, product teams, and professional peers.",
+  profileGoals: "Build relationships, add useful perspective, and invite genuine conversation."
+};
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "generateComment") {
-    generateContent(
-      request.parentComment ? "reply" : "comment",
-      {
-        postContent: request.postContent,
-        parentComment: request.parentComment
-      }
-    )
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  const handlers = {
+    generateComment: () => generateContent(request.parentComment ? "reply" : "comment", {
+      postContent: request.postContent,
+      parentComment: request.parentComment
+    }),
+    summarizePost: () => generateContent("summarize", { postContent: request.postContent }),
+    rewritePost: () => generateContent("rewrite", { postContent: request.postContent }),
+    generateMessageReply: () => generateContent("message", { history: request.history })
+  };
 
-  if (request.action === "summarizePost") {
-    generateContent("summarize", { postContent: request.postContent })
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  if (!handlers[request.action]) return false;
 
-  if (request.action === "rewritePost") {
-    generateContent("rewrite", { postContent: request.postContent })
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  handlers[request.action]()
+    .then(data => sendResponse({ success: true, data }))
+    .catch(error => sendResponse({ success: false, error: error.message }));
 
-  if (request.action === "generateMessageReply") {
-    generateContent("message", { history: request.history })
-      .then(data => sendResponse({ success: true, data: data }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+  return true;
 });
 
-/**
- * Generate content by calling Groq API via Cloudflare Worker
- * @param {string} action - The action type: "comment", "reply", "summarize", "rewrite", or "message"
- * @param {object} context - Context data for the action
- */
 async function generateContent(action, context) {
-  // Validate configuration
-  if (WORKER_URL === "YOUR_WORKER_URL_HERE" || EXTENSION_SECRET === "YOUR_EXTENSION_SECRET_HERE") {
-    throw new Error("Worker URL or EXTENSION_SECRET not configured. Please update background.js with your Cloudflare Worker details.");
+  const settings = await chrome.storage.local.get(DEFAULT_SETTINGS);
+  const apiKey = (settings.googleApiKey || "").trim();
+
+  if (!apiKey) {
+    throw new Error("Google AI API key is not configured. Open the extension settings and paste your API key.");
   }
 
-  let prompt;
-
-  // Build prompt based on action
-  if (action === "comment") {
-    prompt = context.postContent;
-  } else if (action === "reply") {
-    prompt = `Post: "${context.postContent}"\n\nComment to reply to: "${context.parentComment}"`;
-  } else if (action === "summarize") {
-    prompt = context.postContent;
-  } else if (action === "rewrite") {
-    prompt = context.postContent;
-  } else if (action === "message") {
-    prompt = context.history;
-  } else {
-    throw new Error(`Invalid action: ${action}`);
+  const prompt = getPromptInput(action, context);
+  if (!prompt.trim()) {
+    throw new Error("No content was found to send to Gemini.");
   }
 
-  // Call Cloudflare Worker (Groq proxy)
-  try {
-    console.log(`Sending ${action} request to worker:`, WORKER_URL);
-
-    const response = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Extension-Token": EXTENSION_SECRET
-      },
-      body: JSON.stringify({
-        action: action,
-        prompt: prompt
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Worker Error:", response.status, errorData);
-
-      if (response.status === 401) {
-        throw new Error("Authentication failed. Check your EXTENSION_SECRET in background.js.");
-      } else if (response.status === 400) {
-        throw new Error(`Bad request: ${errorData.error || "Invalid parameters"}`);
-      } else if (response.status === 500) {
-        throw new Error(`Server error: ${errorData.error || "Worker configuration issue"}`);
-      } else {
-        throw new Error(`HTTP ${response.status}: ${errorData.error || "Unknown error"}`);
+  const instruction = buildInstruction(action, prompt, buildProfile(settings));
+  const response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: instruction }] }],
+      generationConfig: {
+        temperature: action === "summarize" ? 0.35 : 0.8,
+        topP: 0.9,
+        maxOutputTokens: action === "rewrite" ? 900 : 350
       }
-    }
+    })
+  });
 
-    const result = await response.json();
-    console.log("Worker Response:", result);
+  const result = await response.json().catch(() => ({}));
 
-    // Extract the result from the response
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    if (result.result) {
-      return result.result.trim();
-    }
-
-    throw new Error("Unexpected response format from worker");
-
-  } catch (error) {
-    console.error("Generation failed:", error);
-    throw new Error("Failed to generate content: " + error.message);
+  if (!response.ok) {
+    throw new Error(formatGeminiError(response.status, result));
   }
+
+  const text = result.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim();
+  if (!text) {
+    throw new Error("Gemini returned an empty response. Try again with a longer post or message context.");
+  }
+
+  return text;
+}
+
+function getPromptInput(action, context) {
+  if (action === "comment" || action === "summarize" || action === "rewrite") {
+    return context.postContent || "";
+  }
+
+  if (action === "reply") {
+    return `Post: "${context.postContent || ""}"\n\nComment to reply to: "${context.parentComment || ""}"`;
+  }
+
+  if (action === "message") {
+    return context.history || "";
+  }
+
+  throw new Error(`Invalid action: ${action}`);
+}
+
+function buildProfile(settings) {
+  return {
+    name: settings.profileName,
+    role: settings.profileRole,
+    company: settings.profileCompany,
+    background: settings.profileBackground,
+    expertise: settings.profileExpertise,
+    tone: settings.profileTone,
+    voice: settings.profileVoice,
+    audience: settings.profileAudience,
+    goals: settings.profileGoals
+  };
+}
+
+function buildInstruction(action, prompt, profile) {
+  const profileBlock = [
+    `Name: ${profile.name || "Not provided"}`,
+    `Role: ${profile.role || "Not provided"}`,
+    `Company/Business: ${profile.company || "Not provided"}`,
+    `Background: ${profile.background || "Not provided"}`,
+    `What I do / expertise: ${profile.expertise || "Not provided"}`,
+    `Tone: ${profile.tone || "Warm, specific, concise, practical, and human."}`,
+    `Voice: ${profile.voice || "Thoughtful, clear, non-salesy, and not generic."}`,
+    `Audience: ${profile.audience || "Professional LinkedIn audience"}`,
+    `Goals: ${profile.goals || "Add value and start genuine conversations."}`
+  ].join("\n");
+
+  const sharedRules = `Use the profile below so the answer sounds like the user, not like a generic AI assistant.\n\n${profileBlock}\n\nRules:\n- Be specific to the provided LinkedIn context.\n- Do not invent personal achievements, client names, numbers, or credentials.\n- Avoid clichés like \"Great post\", \"Thanks for sharing\", \"game-changer\", and \"valuable insights\" unless truly necessary.\n- Keep it natural for LinkedIn and easy to paste.\n- Return only the final text.\n- No markdown unless the requested output benefits from bullets.`;
+
+  const prompts = {
+    comment: `${sharedRules}\n\nWrite one LinkedIn comment, 1-3 sentences, that adds a useful perspective and optionally ends with a natural question.\n\nPost:\n${prompt}`,
+    reply: `${sharedRules}\n\nWrite one friendly LinkedIn reply, 1-3 sentences, that acknowledges the other person and adds value.\n\nContext:\n${prompt}`,
+    summarize: `Summarize this LinkedIn post in 3-5 concise bullets. Keep it neutral and accurate.\n\nPost:\n${prompt}`,
+    rewrite: `${sharedRules}\n\nRewrite this LinkedIn draft in the user's voice. Improve the hook, clarity, formatting, and flow while preserving the original meaning. Add 2-4 relevant hashtags only if they fit.\n\nDraft:\n${prompt}`,
+    message: `${sharedRules}\n\nWrite a concise, professional LinkedIn message reply based on this conversation. Keep it natural and easy to send.\n\nConversation:\n${prompt}`
+  };
+
+  return prompts[action] || prompts.comment;
+}
+
+function formatGeminiError(status, result) {
+  const message = result.error?.message || `Gemini API request failed with HTTP ${status}`;
+
+  if (status === 400) return `Gemini rejected the request: ${message}`;
+  if (status === 401 || status === 403) return "Google AI API authentication failed. Check that your API key is correct and the Gemini API is enabled.";
+  if (status === 429) return "Gemini quota limit reached. Wait a few minutes or check your Google AI Studio quota.";
+
+  return message;
 }

@@ -1,55 +1,51 @@
 # 🤖 LinkedIn AI Commenter - Chrome Extension
 
-> **Supercharge your LinkedIn engagement with AI-powered comments, replies, and post improvements!**
+> **Generate LinkedIn comments, replies, message responses, summaries, and rewritten posts in your own voice with Google Gemini.**
 
 ---
 
 ## 🌟 Overview
 
-**LinkedIn AI Commenter** is a Chrome extension that uses Google's Gemini AI to help you engage more effectively on LinkedIn. It generates human-like comments, replies, post summaries, and even rewrites your posts to make them more engaging - all with a single click!
+**LinkedIn AI Commenter** is a Chrome extension that uses Google's Gemini AI directly from the extension. Add your Google AI API key once, fill in your personal profile, tone, background, and writing style, then use one-click buttons on LinkedIn.
 
 ### Why Use This Extension?
 
-- ⏱️ **Save Time**: Generate thoughtful comments in seconds
-- 🎯 **Stay Relevant**: AI analyzes post content to create contextual responses
-- 💡 **Sound Smart**: Get unique perspectives and insights
-- 🚀 **Boost Engagement**: Increase your LinkedIn presence effortlessly
-- 🔒 **Secure**: Your API key stays safe on Cloudflare's servers
+- ⏱️ **Save Time**: Generate thoughtful LinkedIn responses in seconds
+- 🎯 **Stay Relevant**: AI analyzes the post, comment, draft, or message context
+- 🗣️ **Use Your Voice**: Add your name, role, background, expertise, tone, audience, and LinkedIn goals
+- ✍️ **Improve Drafts**: Rewrite posts with stronger hooks and clearer formatting
+- 🔐 **No Backend Required**: No Cloudflare Worker or server setup is needed
 
 ---
 
 ## ✨ Features
 
 ### 1. 💬 AI Comment Generation
-Generate unique, human-like comments on any LinkedIn post that avoid generic phrases and add relevant questions.
+Generate specific, human-like comments on LinkedIn posts.
 
 ### 2. 🔄 Smart Reply Assistant
-Reply to comments with appreciation and added value, including extra insights and follow-up questions.
+Reply to comments with appreciation, context, and added value.
 
 ### 3. 📝 Post Summarizer
-Get quick 3-5 bullet point summaries of long LinkedIn posts.
+Get quick 3-5 bullet summaries of long LinkedIn posts.
 
 ### 4. ✍️ Post Rewriter
-Transform your draft posts into viral-worthy content with compelling hooks, better formatting, and relevant hashtags.
+Transform your draft posts with better hooks, structure, and clarity.
 
 ### 5. 💌 Smart Message Replies
-Generate professional replies in LinkedIn messages based on conversation history.
+Generate professional replies in LinkedIn messages based on recent conversation history.
 
 ---
 
 ## 🔧 How It Works
 
 ```
-LinkedIn Page → Chrome Extension → Background Script → Cloudflare Worker → Google Gemini AI → Response
+LinkedIn Page → Chrome Extension → Background Script → Google Gemini API → Response
 ```
 
-The extension uses a **Cloudflare Worker** as a secure proxy to keep your Google AI API key safe. The API key is stored on Cloudflare's servers, not in the extension where it could be extracted.
+The Google API key is saved in Chrome extension local storage on your own browser. The extension does not need Cloudflare, a separate server, or a proxy.
 
-**Benefits:**
-- 🔒 Security: API key never exposed
-- 🌍 Fast: Cloudflare's global edge network
-- 💰 Free: 100,000 requests/day
-- 🛡️ Protected: CORS and request validation
+> **Security note**: Local storage is convenient for personal use, but anyone with access to your browser profile or unpacked extension debugging tools may be able to access the key. Keep your API key private and rotate it if you suspect exposure.
 
 ---
 
@@ -57,56 +53,42 @@ The extension uses a **Cloudflare Worker** as a secure proxy to keep your Google
 
 ### Manual Installation (Developer Mode)
 
-1. **Download the Extension**
-   - Download this repository as ZIP and extract it
-
-2. **Open Chrome Extensions**
-   - Go to `chrome://extensions/`
-   - Enable **"Developer mode"** (top right)
-
-3. **Load the Extension**
-   - Click **"Load unpacked"**
-   - Select the extension folder
-   - Pin the extension icon (optional)
+1. Download this repository as a ZIP and extract it.
+2. Open Chrome and go to `chrome://extensions/`.
+3. Enable **Developer mode** in the top right.
+4. Click **Load unpacked**.
+5. Select the extracted extension folder.
+6. Pin the extension icon if desired.
 
 ---
 
 ## 🚀 Setup Guide
 
-### Quick Setup (4 Steps)
+### Step 1: Get a Google AI API Key
 
-#### Step 1: Get Google AI API Key
+1. Go to **https://aistudio.google.com/app/apikey**.
+2. Sign in with your Google account.
+3. Click **Create API Key**.
+4. Copy the key. It usually starts with `AIza`.
 
-1. Go to: **https://aistudio.google.com/app/apikey**
-2. Sign in and click **"Create API Key"**
-3. Copy the API key (starts with `AIza...`)
+If Google reports that the API is not enabled, enable the Gemini API in your Google Cloud project.
 
-#### Step 2: Set Up Cloudflare Worker
+### Step 2: Configure the Extension
 
-1. Go to: **https://dash.cloudflare.com/sign-up** (create free account)
-2. Navigate to **Workers & Pages** → **Create Worker**
-3. Name it (e.g., `linkedin-ai-proxy`) and deploy
-4. Click **"Edit Code"**, delete default code
-5. Copy all code from `worker.js` and paste
-6. Click **"Save and Deploy"**
-
-#### Step 3: Add API Key to Worker
-
-1. Go to **Settings** tab → **"Variables and Secrets"**
-2. Click **"Add variable"**
-3. Name: `GEMINI_API_KEY` (exactly this)
-4. Value: Paste your API key
-5. Click **"Encrypt"** and **"Save and Deploy"**
-6. Copy your worker URL
-
-#### Step 4: Update Extension
-
-1. Open `manifest.json`, update line 18 with your worker URL
-2. Open `background.js`, update line 123 with your worker URL
-3. Go to `chrome://extensions/` and reload the extension
-4. Test on LinkedIn!
-
-**📖 Detailed Setup Instructions**: See [README-CLOUDFLARE-SETUP.md](README-CLOUDFLARE-SETUP.md)
+1. Click the extension icon to open settings.
+2. Paste your Google AI API key into **Google AI API Key**.
+3. Fill in **Your Tone, Voice & Work**:
+   - Name
+   - Role / title
+   - Company / business
+   - Background
+   - What you do / expertise
+   - Tone
+   - Voice rules
+   - Audience
+   - LinkedIn goals
+4. Toggle the features you want enabled.
+5. Refresh LinkedIn and start using the AI buttons.
 
 ---
 
@@ -114,189 +96,132 @@ The extension uses a **Cloudflare Worker** as a secure proxy to keep your Google
 
 ### On LinkedIn Feed
 
-- **Comment**: Click "Add a comment" → Click **"✨ AI Comment"**
-- **Reply**: Click "Reply" on any comment → Click **"✨ Assist Reply"**
-- **Summarize**: Click **"📝 Summarize"** button on any post
+- **Comment**: Click "Add a comment" → Click **✨ AI Comment**
+- **Reply**: Click "Reply" on any comment → Click **✨ Assist Reply**
+- **Summarize**: Click **📝 Summarize** on any post
 
 ### Creating Posts
 
-1. Click "Start a post"
-2. Write your draft
-3. Click **"✨ Post Rewrite"**
-4. Review and post!
+1. Click "Start a post".
+2. Write your draft.
+3. Click **✨ Post Rewrite**.
+4. Review and post.
 
 ### In Messages
 
-1. Open any conversation
-2. Click **"✨ Smart Reply"**
-3. Review and send!
-
-### Settings
-
-Click the extension icon to toggle features on/off.
+1. Open any conversation.
+2. Click **✨ Smart Reply**.
+3. Review and send.
 
 ---
 
 ## 🏗️ Architecture
 
-### File Structure
-
 ```
 linkedin-ai-commenter/
-├── manifest.json              # Extension configuration
-├── background.js              # Service worker (API calls)
-├── content.js                 # Injects buttons on LinkedIn
-├── styles.css                 # Button styling
-├── options.html/js            # Settings page
-├── worker.js                  # Cloudflare Worker code
-├── README.md                  # Main documentation
-└── README-CLOUDFLARE-SETUP.md # Detailed setup guide
+├── manifest.json   # Chrome extension configuration
+├── background.js   # Gemini API calls and personalized prompt construction
+├── content.js      # LinkedIn DOM detection and button injection
+├── styles.css      # Button styling
+├── options.html    # Settings popup UI
+├── options.js      # Settings persistence
+├── README.md       # Documentation
+└── app_icon.png    # Extension icon
 ```
 
 ### Components
 
-1. **Content Script** (`content.js`): Detects LinkedIn elements and injects AI buttons
-2. **Background Script** (`background.js`): Handles API calls and prompt construction
-3. **Cloudflare Worker** (`worker.js`): Secure proxy that stores API key and calls Gemini
-4. **Options Page**: Settings interface for toggling features
+1. **Content Script** (`content.js`): Detects LinkedIn editors/posts/messages and injects AI buttons.
+2. **Background Script** (`background.js`): Reads settings, builds prompts, calls Gemini, and returns generated text.
+3. **Options Page** (`options.html`, `options.js`): Stores API key, personal profile, and feature toggles.
 
 ---
 
 ## ⚙️ Configuration
 
-### Extension Settings
+Access settings through the extension icon.
 
-Access via extension icon. Toggle features:
+### Required
+
+- **Google AI API Key**: Your Gemini API key from Google AI Studio.
+
+### Personalization
+
+The extension sends these fields to Gemini with each generation request so outputs match your style:
+
+- Name
+- Role / title
+- Company / business
+- Background
+- What you do / expertise
+- Tone
+- Voice rules
+- Audience
+- LinkedIn goals
+
+### Feature Toggles
+
 - AI Comment ✅
 - Smart Reply ✅
 - Post Summarizer ✅
 - Post Rewriter ✅
 
-### Worker Configuration
-
-Edit `worker.js` to customize:
-
-**AI Model:**
-```javascript
-const GEMINI_MODEL = 'gemini-1.5-flash'; // Fast (default)
-// or 'gemini-1.5-pro' for better quality
-```
-
-**Creativity:**
-```javascript
-temperature: 0.9, // 0.0 (focused) to 1.0 (creative)
-```
-
 ---
 
 ## 🔒 Privacy & Security
 
-### Data Collection
+This extension does not intentionally collect analytics or send data to any custom backend. It sends only the content you ask it to process, plus your profile settings, directly to Google's Gemini API.
 
-**None.** This extension does NOT:
-- Collect personal data
-- Track your activity
-- Store LinkedIn content
-- Send data to third parties (except Google Gemini API)
+Your API key is stored in Chrome extension local storage on your browser. For best security:
 
-### What's Sent to Google?
-
-Only content you explicitly request to process (post text, comments, drafts). Subject to [Google's Privacy Policy](https://policies.google.com/privacy).
-
-### API Key Security
-
-Your API key is:
-- ✅ Stored on Cloudflare's secure servers
-- ✅ Encrypted in environment variables
-- ✅ Never exposed in extension code
-- ✅ Protected by CORS policies
+- Do not share your API key.
+- Do not commit your API key to GitHub.
+- Restrict or rotate the key from Google AI Studio if needed.
+- Remove the key from extension settings when using a shared computer.
 
 ---
 
 ## 🔧 Troubleshooting
 
 ### Buttons Don't Appear
-- Reload extension at `chrome://extensions/`
-- Refresh LinkedIn page
-- Check extension settings
 
-### "Failed to connect to AI"
-- Verify worker URL in `background.js` line 123
-- Check worker is deployed in Cloudflare dashboard
-- Test worker URL in browser
+- Reload the extension at `chrome://extensions/`.
+- Refresh the LinkedIn page.
+- Check that the feature is enabled in extension settings.
 
-### "API key not configured"
-- Verify variable name is exactly `GEMINI_API_KEY`
-- Re-enter API key in worker settings
-- Click "Save and Deploy"
+### "Google AI API key is not configured"
 
-### "Gemini API Error (400/401)"
-- Verify API key at https://aistudio.google.com/app/apikey
-- Enable API: https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com
-- Check quota limits (15 req/min, 1,500/day)
+- Open the extension popup.
+- Paste your Google AI API key.
+- Try again on LinkedIn.
 
-**📖 More Solutions**: See [README-CLOUDFLARE-SETUP.md](README-CLOUDFLARE-SETUP.md#troubleshooting)
+### "Google AI API authentication failed"
 
----
+- Make sure the API key is copied correctly.
+- Create a new key at https://aistudio.google.com/app/apikey.
+- Enable the Gemini API for the project if Google asks you to.
 
-## ❓ FAQ
+### "Gemini quota limit reached"
 
-**Is this free?**
-Yes! Google AI Studio (1,500 req/day) and Cloudflare Workers (100,000 req/day) are both free.
+- Wait a few minutes and try again.
+- Check your Google AI Studio quota.
 
-**Will I get banned from LinkedIn?**
-No. You still review and post comments manually.
+### Comment or Message Box Does Not Fill
 
-**Can I customize AI responses?**
-Yes! Edit prompts in `background.js` lines 34-120.
+LinkedIn changes its UI often. Try:
 
-**Does this work on mobile?**
-No, Chrome extensions only work on desktop browsers.
-
-**What's the difference between gemini-1.5-flash and pro?**
-- **flash**: Faster, good quality (default)
-- **pro**: Slower, excellent quality
+- Clicking inside the comment/message box first.
+- Refreshing LinkedIn.
+- Reloading the extension.
+- Checking the browser console for content script errors.
 
 ---
 
-## 🤝 Contributing
+## ✅ Success Checklist
 
-Contributions welcome! 
-- Report bugs via Issues
-- Suggest features
-- Submit pull requests
-- Improve documentation
-
----
-
-## 📄 License
-
-MIT License - See full license in repository.
-
----
-
-## 🙏 Acknowledgments
-
-- **Google Gemini AI**: Powerful AI model
-- **Cloudflare**: Free Workers platform
-- **You**: For using this extension!
-
----
-
-## 🗺️ Roadmap
-
-### Version 1.1
-- Multiple AI providers (OpenAI, Claude)
-- Custom prompt templates
-- Keyboard shortcuts
-
-### Version 2.0
-- Analytics dashboard
-- Tone selector
-- Multi-language support
-
----
-
-**Made with ❤️ for the LinkedIn community**
-
-*Happy networking! 🚀*
+- [ ] Extension loaded in Chrome Developer Mode
+- [ ] Google AI API key saved in extension settings
+- [ ] Personal profile completed
+- [ ] Desired feature toggles enabled
+- [ ] LinkedIn page refreshed after loading the extension
+- [ ] AI button clicked and generated text appears

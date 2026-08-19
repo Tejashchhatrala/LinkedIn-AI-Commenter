@@ -142,6 +142,67 @@
       opacity: 0.8;
     }
 
+
+
+    .settings-card {
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      margin-bottom: 16px;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    .settings-card h2 {
+      font-size: 15px;
+      margin: 0 0 12px;
+      color: #0a66c2;
+    }
+
+    .field-group {
+      margin-bottom: 12px;
+    }
+
+    .field-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    .field-group input,
+    .field-group textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #d0d7de;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .field-group textarea {
+      min-height: 58px;
+      resize: vertical;
+    }
+
+    .help-text {
+      font-size: 10px;
+      color: #6b7280;
+      line-height: 1.35;
+      margin-top: 4px;
+    }
+
+    .save-status {
+      min-height: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #057642;
+      text-align: right;
+    }
+
     .badge {
       display: inline-block;
       margin-top: 5px;
@@ -162,6 +223,58 @@
       <img src="app_icon.png" alt="AI" class="logo">
       <h1>LinkedIn AI Assistant</h1>
       <div class="badge">Powered by Gemini 2.0 Flash</div>
+    </div>
+
+
+
+    <div class="settings-card">
+      <h2>Google AI Setup</h2>
+      <div class="field-group">
+        <label for="googleApiKey">Google AI API Key</label>
+        <input id="googleApiKey" type="password" placeholder="Paste your AIza... API key">
+        <div class="help-text">Stored only in this browser with Chrome extension storage. Get a key from Google AI Studio.</div>
+      </div>
+      <div id="saveStatus" class="save-status" aria-live="polite"></div>
+    </div>
+
+    <div class="settings-card">
+      <h2>Your Tone, Voice & Work</h2>
+      <div class="field-group">
+        <label for="profileName">Name</label>
+        <input id="profileName" type="text" placeholder="Your name">
+      </div>
+      <div class="field-group">
+        <label for="profileRole">Role / Title</label>
+        <input id="profileRole" type="text" placeholder="Founder, marketer, engineer, consultant...">
+      </div>
+      <div class="field-group">
+        <label for="profileCompany">Company / Business</label>
+        <input id="profileCompany" type="text" placeholder="What company or brand should it reference?">
+      </div>
+      <div class="field-group">
+        <label for="profileBackground">Your Background</label>
+        <textarea id="profileBackground" placeholder="Your experience, story, industries, values, and point of view."></textarea>
+      </div>
+      <div class="field-group">
+        <label for="profileExpertise">What You Do</label>
+        <textarea id="profileExpertise" placeholder="Describe your work, offers, skills, industries, and topics you understand."></textarea>
+      </div>
+      <div class="field-group">
+        <label for="profileTone">Tone</label>
+        <textarea id="profileTone" placeholder="Warm, direct, witty, concise, analytical..."></textarea>
+      </div>
+      <div class="field-group">
+        <label for="profileVoice">Voice Rules</label>
+        <textarea id="profileVoice" placeholder="Words to use or avoid, sentence length, how opinionated to be..."></textarea>
+      </div>
+      <div class="field-group">
+        <label for="profileAudience">Audience</label>
+        <input id="profileAudience" type="text" placeholder="Who do you usually talk to on LinkedIn?">
+      </div>
+      <div class="field-group">
+        <label for="profileGoals">LinkedIn Goals</label>
+        <textarea id="profileGoals" placeholder="Build authority, book calls, nurture network, hire, find clients..."></textarea>
+      </div>
     </div>
 
     <div class="features-card">
@@ -223,7 +336,7 @@
     </div>
 
     <div class="footer">
-      Secure & Free • Version 2.0<br>
+      Local API Key • Version 1.2<br>
       <a href="https://webloop.space" target="_blank"
         style="color: #0a66c2; text-decoration: none; font-weight: 600; margin-top: 5px; display: inline-block;">Use
         our free super tools: webloop.space</a>
